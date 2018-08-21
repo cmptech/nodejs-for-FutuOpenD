@@ -1,3 +1,4 @@
+const Q = require("q");
 const bunyan = require('bunyan');
 const bunyanDebugStream = require('bunyan-debug-stream');
 const Socket = require('./socket');
@@ -1360,8 +1361,13 @@ class FutuQuant {
    * @returns {number} orderID 订单号
    */
   async trdPlaceOrder(params) { // 2202下单
+      let dfr = Q.defer();
     if (!this.trdHeader) throw new Error('请先调用setCommonTradeHeader接口设置交易公共header');
-    return (await this.socket.send('Trd_PlaceOrder', Object.assign({
+    // return (await this.socket.send('Trd_PlaceOrder', Object.assign({
+      // let orderID = 0;
+      // try{
+      // orderID = this.socket.send('Trd_PlaceOrder', Object.assign({
+        this.socket.send('Trd_PlaceOrder', Object.assign({
       packetID: {
         connID: this.connID,
         serialNo: this.socket.requestId,
@@ -1375,7 +1381,19 @@ class FutuQuant {
       // 以下为调整价格使用，目前仅对港、A股有效，因为港股有价位，A股2位精度，美股不需要
       adjustPrice: false, // 是否调整价格，如果价格不合法，是否调整到合法价位，true调整，false不调整
       adjustSideAndLimit: 0, // 调整方向和调整幅度百分比限制，正数代表向上调整，负数代表向下调整，具体值代表调整幅度限制，如：0.015代表向上调整且幅度不超过1.5%；-0.01代表向下调整且幅度不超过1%
-    }, params))).orderID;
+      // }, params))).orderID;
+      //   }, params)).orderID;
+        }, params))
+        .then(rst=>{
+          dfr.resolve(rst.orderID);
+        },(err)=>{
+            dfr.reject(err.toString());
+        });
+      // }catch (e){
+      //   throw new Error(e.toString());
+      // }
+      // return orderID;
+        return dfr.promise;
   }
   /**
    * 2202市价下单，直到成功为止，返回买入/卖出的总价格
